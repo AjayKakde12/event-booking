@@ -41,14 +41,15 @@ func createEvent(context *gin.Context) {
 		fmt.Println(err)
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse request data"})
 	}
-	event.ID = 1
-	event.UserId = 1
-	err = event.Save()
+	event.UserId = context.GetInt64("userId")
+
+	eventId, err := event.Save()
 	if err != nil {
 		fmt.Println(err)
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not save event. Try again later."})
 		return
 	}
+	event.ID = eventId
 	context.JSON(http.StatusCreated, gin.H{"message": "Event Created", "event": event})
 }
 
@@ -59,12 +60,17 @@ func updateEvent(context *gin.Context) {
 		return
 	}
 
-	_, err = models.GetEventById(eventId)
+	userId := context.GetInt64("userId")
+	event, err := models.GetEventById(eventId)
 	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Could not fetch event. Try again later."})
 		return
 	}
 
+	if event.UserId != userId {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorised User. Try again later."})
+		return
+	}
 	var updatedEvent models.Event
 	err = context.ShouldBindJSON(&updatedEvent)
 	if err != nil {

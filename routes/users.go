@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"event-booking.com/root/models"
+	"event-booking.com/root/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,5 +40,13 @@ func login(context *gin.Context) {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid credentials"})
 		return
 	}
-	context.JSON(http.StatusOK, gin.H{"message": "Login successfully"})
+	token, err := utils.GenerateToken(user.Email, user.ID)
+
+	if err != nil {
+		fmt.Println(err)
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not generate token"})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Login successfully", "token": token})
 }
